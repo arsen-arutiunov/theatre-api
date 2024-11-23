@@ -275,13 +275,14 @@ class PerformanceViewSet(viewsets.ModelViewSet):
             )
         )
     )
-    serializer_class = PerformanceSerializer
+    serializer_class = PerformanceListSerializer
 
     def get_queryset(self):
         date = self.request.query_params.get("date")
         play_id_str = self.request.query_params.get("play")
 
         queryset = self.queryset
+
 
         if date:
             date = datetime.strptime(date, "%Y-%m-%d").date()
