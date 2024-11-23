@@ -1,11 +1,15 @@
 from datetime import datetime
 
 from django.db.models import F, Count
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiParameter,
+    extend_schema_view
+)
 from rest_framework import viewsets, mixins, status
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
@@ -42,6 +46,22 @@ class GenreViewSet(
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
 
+    @extend_schema(
+        summary="Get a list of genres",
+        description="Returns a list of all genres available in the database.",
+        responses={200: GenreSerializer(many=True)},
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @extend_schema(
+        summary="Create a new genre",
+        description="Creates a new genre by accepting JSON with parameters.",
+        request=GenreSerializer,
+        responses={201: GenreSerializer},
+    )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
 
 
 class ActorViewSet(
@@ -52,6 +72,23 @@ class ActorViewSet(
     queryset = Actor.objects.all()
     serializer_class = ActorSerializer
 
+    @extend_schema(
+        summary="Get the cast list",
+        description="Returns a list of all actors.",
+        responses={200: ActorSerializer(many=True)},
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @extend_schema(
+        summary="Create a new actor",
+        description="Creates a new actor. Requires JSON with parameters.",
+        request=ActorSerializer,
+        responses={201: ActorSerializer},
+    )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
 
 class TheatreHallViewSet(
     mixins.CreateModelMixin,
@@ -61,7 +98,39 @@ class TheatreHallViewSet(
     queryset = TheatreHall.objects.all()
     serializer_class = TheatreHallSerializer
 
+    @extend_schema(
+        summary="Get a list of theatre venues",
+        description="Returns a list of all theatre halls.",
+        responses={200: TheatreHallSerializer(many=True)},
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
+    @extend_schema(
+        summary="Create a new theatre room",
+        description="Creates a new room by accepting JSON with parameters.",
+        request=TheatreHallSerializer,
+        responses={201: TheatreHallSerializer},
+    )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+
+@extend_schema_view(
+    retrieve=extend_schema(
+        summary="Get a play by id",
+        description="Get information about a specific play by ID."
+    ),
+    update=extend_schema(
+        summary="Update a play by id",
+        description="Update information about a specific play by ID."
+    ),
+    partial_update=extend_schema(
+        summary="Partial update a play by id",
+        description="Partially update information about a "
+                    "particular play by ID."
+    ),
+)
 class PlayViewSet(
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
@@ -116,8 +185,18 @@ class PlayViewSet(
         url_path="upload-image",
         permission_classes=[IsAdminUser],
     )
+    @extend_schema(
+        summary="Upload an image for a specific play",
+        description=(
+                "This endpoint allows administrators to upload "
+                "an image for a specific play. "
+                "The `id` in the URL corresponds to the play ID."
+        ),
+        request=PlayImageSerializer,
+        responses={200: PlayImageSerializer},
+    )
     def upload_image(self, request, pk=None):
-        """Endpoint for uploading image to specific movie"""
+        """Endpoint for uploading image to specific play"""
         play = self.get_object()
         serializer = self.get_serializer(play, data=request.data)
 
@@ -128,6 +207,11 @@ class PlayViewSet(
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(
+        summary="Get a list of plays",
+        description="Returns a list of plays that can be filtered by "
+                    "parameters: actors (id), genres (id), title (string).",
+        request=PlaySerializer,
+        responses={201: PlaySerializer},
         parameters=[
             OpenApiParameter(
                 name="actors",
@@ -150,7 +234,36 @@ class PlayViewSet(
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
+    @extend_schema(
+        summary="Create a new play",
+        description="A play is created by passing the parameters: "
+                    "title, description, genres, actors and image link.",
+        request=PlaySerializer,
+        responses={201: PlaySerializer},
+    )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
 
+
+@extend_schema_view(
+    retrieve=extend_schema(
+        summary="Get a performance by id",
+        description="Get information about a specific performance by ID."
+    ),
+    update=extend_schema(
+        summary="Update a performance by id",
+        description="Update information about a specific performance by ID."
+    ),
+    partial_update=extend_schema(
+        summary="Partial update a performance by id",
+        description="Partially update information about a "
+                    "particular performance by ID."
+    ),
+    destroy=extend_schema(
+        summary="Delete a performance by id",
+        description="Delete a performance by ID."
+    )
+)
 class PerformanceViewSet(viewsets.ModelViewSet):
     queryset = (
         Performance.objects.all()
@@ -189,11 +302,16 @@ class PerformanceViewSet(viewsets.ModelViewSet):
         return PerformanceSerializer
 
     @extend_schema(
+        summary="Get a list of performances",
+        description="Returns a list of performances filtered by play "
+                    "and data parameters.",
+        request=PerformanceSerializer,
+        responses={201: PerformanceSerializer},
         parameters=[
             OpenApiParameter(
                 name="play",
                 type={"type": "number"},
-                description="Filter by movie id (ex. ?play=2)",
+                description="Filter by play id (ex. ?play=2)",
             ),
             OpenApiParameter(
                 name="date",
@@ -205,6 +323,16 @@ class PerformanceViewSet(viewsets.ModelViewSet):
     )
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
+
+    @extend_schema(
+        summary="Create a new performance",
+        description="A performance is created by passing the parameters: "
+                    "show time, play and theatre hall.",
+        request=PerformanceSerializer,
+        responses={201: PerformanceSerializer},
+    )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
 
 
 class ReservationPagination(PageNumberPagination):
@@ -222,6 +350,7 @@ class ReservationViewSet(
     )
     serializer_class = ReservationSerializer
     pagination_class = ReservationPagination
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return Reservation.objects.filter(user=self.request.user)
@@ -235,3 +364,21 @@ class ReservationViewSet(
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    @extend_schema(
+        summary="Get a list of reservations",
+        description="Returns a list of all reservations belonging to "
+                    "the current user.",
+        responses={200: ReservationListSerializer(many=True)},
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @extend_schema(
+        summary="Create a new reservation",
+        description="Allows the user to create a new reservation. "
+                    "JSON with reservation data is required.",
+        request=ReservationSerializer,
+        responses={201: ReservationSerializer},
+    )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
