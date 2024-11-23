@@ -32,11 +32,13 @@ class TheatreHallSerializer(serializers.ModelSerializer):
 
 
 class PlaySerializer(serializers.ModelSerializer):
-    genres = serializers.SlugRelatedField(
-        many=True, read_only=True, slug_field="name"
+    genres = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Genre.objects.all()
     )
-    actors = serializers.SlugRelatedField(
-        many=True, read_only=True, slug_field="full_name"
+    actors = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Actor.objects.all()
     )
 
     class Meta:
