@@ -14,7 +14,7 @@ Theatre API is a RESTful API for managing theatre performances, reservations, an
 
 ---
 ## DB structure:
-![DB structure](readme_images/theatre_diagram.jpg)
+<img src="readme_images/theatre_diagram.jpg" alt="DB structure"/>
 
 ---
 ## Technologies
